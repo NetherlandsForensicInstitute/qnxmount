@@ -1,6 +1,11 @@
 # QNX Filesystems
 QNX filesystem parsers to mount non-standard images (read only).
-Mounting is based on fuse, and only tested on Linux machines.
+
+Existing tools were not able to handle the exotic configurations of some of these filesystems that we encountered in vehicle forensics.
+For instance on blocksizes greater than 4K on qnx6 filesystems, or non-standard allignment on qnx efs filesystems.
+
+Mounting with these parsers is based on fuse, and only tested on Linux machines.
+
 
 ## Getting started
 Set up your python virtual environment and activate the environment:
