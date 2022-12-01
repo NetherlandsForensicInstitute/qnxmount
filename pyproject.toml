@@ -1,16 +1,12 @@
 [project]
 name = "qnxmount"
 description = "read only mounters for qnx filesystems"
-version = "0.1.0"
+version = "0.1.2"
 readme = "README.md"
 requires-python = ">=3.6"
 authors = [
     { name = "Anda Knol", email = "a.knol@nfi.nl" },
     { name = "Francis Hoogendijk", email = "f.hoogendijk@nfi.nl" }
-]
-
-classifiers = [
-    "Topic :: QNX"
 ]
 
 dependencies = [
@@ -32,6 +28,3 @@ repository = "https://github.com/NetherlandsForensicInstitute/qnxmount"
 [build-system]
 build-backend = "setuptools.build_meta"
 requires = ["setuptools", "setuptools-scm"]
-
-[tool.setuptools]
-py-modules = ["qnxmount"]

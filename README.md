@@ -8,14 +8,13 @@ Set up your python virtual environment and activate the environment:
 python3 -m venv venv
 source ./venv/bin/activate
 ```
-Install the dependencies with:
+Install qnxmount:
 ```commandline
-pip install git+https://gitlab-ci-token:{token}@git.eminjenv.nl/vakgroep-automotive/filesystems-and-ftls/qnx-filesystems.git
+pip install qnxmount
 ```
 
-Or clone and install.
+Or clone this repo and install.
 ```commandline
-git clone git+https://gitlab-ci-token:{token}@git.eminjenv.nl/vakgroep-automotive/filesystems-and-ftls/qnx-filesystems.git
 pip install .
 ```
 
