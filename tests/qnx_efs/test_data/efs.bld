@@ -1,0 +1,2 @@
+[block_size=128k spare_blocks=1 min_size=512k mount=/mnt/test123] 
+
