@@ -23,15 +23,20 @@ Or clone this repo and install.
 pip install .
 ```
 
+Install fuse.
+```commandline
+sudo apt install fuse
+```
+
 ## Usage
 Run the parser script (used on HDD/SSD/eMMC):
 ```shell
-python3 -m qnxmount {fs_type} [options] mountpoint image
+python3 -m qnxmount {fs_type} [options] image mountpoint
 ```
 
 For example, a specific mounter (qnx6) is called with:
 ```shell
-python3 -m qnxmount qnx6 -o OFFSET mountpoint image
+python3 -m qnxmount qnx6 -o OFFSET image mountpoint 
 ```
 
 Now navigate to the given mount point with your favourite terminal or file browser to access the file system.

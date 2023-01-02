@@ -14,13 +14,12 @@ LOGGER = logging.getLogger("qnxmount")
 def mount(args):
     LOGGER.info(f"Selected mounter type: {args.type}")
     LOGGER.info(f"Mounting image {args.image} on mount point {args.mount_point}")
-    match args.type:
-        case "qnx6":
-            qnx6.mount(args.image, args.mount_point, args.offset)
-        case "efs":
-            efs.mount(args.image, args.mount_point)
-        case "etfs":
-            etfs.mount(args.image, args.mount_point, args.offset, args.page_size)
+    if args.type == "qnx6":
+        qnx6.mount(args.image, args.mount_point, args.offset)
+    elif args.type == "efs":
+        efs.mount(args.image, args.mount_point)
+    elif args.type == "etfs":
+        etfs.mount(args.image, args.mount_point, args.offset, args.page_size)
     LOGGER.info(f"Unmounting image {args.image} from mount point {args.mount_point}")
 
 
