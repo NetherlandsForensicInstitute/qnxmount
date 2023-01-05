@@ -5,6 +5,7 @@ from pathlib import Path
 from fuse import FUSE, FuseOSError, Operations
 
 from qnxmount.etfs.interface import ETFS
+from qnxmount.stream import Stream
 
 LOGGER = logging.getLogger(__name__)
 
@@ -13,12 +14,11 @@ class FuseETFS(Operations):
     """Fuse implementation of the ETFS file system.
 
     Args:
-        image (Path): Path to the image.
-        offset (int): Start of the ETFS partition in the image.
+        stream: Kaitaistream containing the qnx6 file system.
     """
 
-    def __init__(self, image, offset, pagesize):
-        self.etfs = ETFS(image, offset, pagesize=pagesize)
+    def __init__(self, stream, pagesize):
+        self.etfs = ETFS(stream, pagesize=pagesize)
 
     def getattr(self, path, fh=None):
         """Get directory with stat information.
@@ -108,5 +108,6 @@ class FuseETFS(Operations):
 
 
 def mount(image, mount_point, offset, pagesize):
-    etfs = FuseETFS(image, offset, pagesize)
-    FUSE(etfs, str(mount_point), nothreads=True, foreground=True)
+    with Stream(image, offset) as stream:
+        etfs = FuseETFS(stream, pagesize)
+        FUSE(etfs, str(mount_point), nothreads=True, foreground=True)

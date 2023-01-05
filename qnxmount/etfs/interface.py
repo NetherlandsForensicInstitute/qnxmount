@@ -13,26 +13,26 @@ class ETFS:
     """This class implements the basic functionality to create a Kaitai io stream.
 
     Args:
-        path (Path): Path to the image.
-        offset (int): Offset in the image to start the Kaitai stream at.
+        stream: Kaitaistream containing the qnx6 file system.
+        pagesize (int): page size.
 
     Attributes:
-        path (Path): Path to the image.
-        f: File handle.
-        mm (mmap): Memory map of the file.
-        stream (KaitaiStream): Kaitai data stream of memory-mapped file.
+        stream: Kaitaistream containing the qnx6 file system.
+        parser (Parser): Parser class automatically generated from .ksy file.
+        page_size (int): page size.
+        current_pages: 
+        ftable: File table of the file system.
+        dir_tree: Directory tree of the file system.
+        path_to_fid: Dictionary to map a file path to a fid.
     """
-    def __init__(self, path, offset=0, pagesize=2048):
-        self.path = path
-        self.f = open(self.path, 'rb')
-        self.mm = mmap.mmap(self.f.fileno(), length=0, offset=offset, access=mmap.ACCESS_READ)
-        self.stream = KaitaiStream(self.mm)
+    def __init__(self, stream, pagesize=2048):
+        self.stream = stream
         self.parser = Parser(self.stream)
 
         transaction_size = 16
         self.page_size = pagesize
-        assert self.mm.size() % (pagesize + transaction_size) == 0, 'size of memory map invalid'
-        num_pages = self.mm.size() // (pagesize + transaction_size)
+        assert self.stream._io.size() % (pagesize + transaction_size) == 0, 'size of memory map invalid'
+        num_pages = self.stream._io.size() // (pagesize + transaction_size)
         self.parser._m_pages = self.parser.Pages(pagesize, num_pages, self.parser._io, _root=self.parser)
         self.current_pages = self.get_current_file_pages()
 
@@ -41,11 +41,6 @@ class ETFS:
         self.dir_tree = self.build_dir_tree()
 
         self.path_to_fid = {self.get_path(fid): fid for fid, entry in enumerate(self.ftable) if ((entry is not None) and (entry.full_name is not None))}
-
-    def __del__(self):
-        self.stream.close()
-        self.mm.close()
-        self.f.close()
 
     def read_dir(self, path):
         return self.dir_tree[path]
