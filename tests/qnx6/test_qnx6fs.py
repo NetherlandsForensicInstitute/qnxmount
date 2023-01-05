@@ -1,15 +1,20 @@
 from pathlib import Path
 from stat import S_ISDIR, S_ISLNK, S_ISREG, S_ISFIFO, S_ISCHR, S_ISBLK
+from qnxmount.qnx6.interface import QNX6FS
+from qnxmount.stream import Stream
+import tarfile
 
 
-def test_compare_parsing_of_image_with_tar(qnx6_image, qnx6_tar):
-    for member in qnx6_tar.getmembers():
-        inode_number = qnx6_image.get_inode_number_from_path(Path(member.name))
-        inode = qnx6_image.get_inode(inode_number)
+def test_compare_parsing_of_image_with_tar(image_path, tar_path):
+    with Stream(image_path) as stream, tarfile.open(tar_path) as qnx6_tar:
+        qnx6_image = QNX6FS(stream)
+        for member in qnx6_tar.getmembers():
+            inode_number = qnx6_image.get_inode_number_from_path(Path(member.name))
+            inode = qnx6_image.get_inode(inode_number)
 
-        assert_inode_contents_equal(member, inode)
-        if member.isreg():  # for regular files check if contents equal
-            assert qnx6_tar.extractfile(member).read() == qnx6_image.read_file(inode)
+            assert_inode_contents_equal(member, inode)
+            if member.isreg():  # for regular files check if contents equal
+                assert qnx6_tar.extractfile(member).read() == qnx6_image.read_file(inode)
 
 
 def assert_inode_contents_equal(tar_inode, image_inode):
@@ -34,18 +39,21 @@ def assert_inode_contents_equal(tar_inode, image_inode):
     assert tar_inode.mode & 0o7777 == image_inode.mode & 0o7777  # permissions, setuid, setgid, reserved bit
 
 
-def test_read_file_on_large_regular_file(qnx6_image, qnx6_tar):
-    for member in qnx6_tar.getmembers():
-        if member.isreg() and member.size > qnx6_image.blocksize:
-            inode_number = qnx6_image.get_inode_number_from_path(Path(member.name))
-            inode = qnx6_image.get_inode(inode_number)
+def test_read_file_on_large_regular_file(image_path, tar_path):
+    with Stream(image_path) as stream, tarfile.open(tar_path) as qnx6_tar:
+        qnx6_image = QNX6FS(stream)
+        
+        for member in qnx6_tar.getmembers():
+            if member.isreg() and member.size > qnx6_image.blocksize:
+                inode_number = qnx6_image.get_inode_number_from_path(Path(member.name))
+                inode = qnx6_image.get_inode(inode_number)
 
-            offset = min(17, member.size % qnx6_image.blocksize)
-            def tar_raw_bytes(o, s): return qnx6_tar.extractfile(member).read()[o: o + s]
-            def image_raw_bytes(o, s): return qnx6_image.read_file(inode, offset=o, size=s)
+                offset = min(17, member.size % qnx6_image.blocksize)
+                def tar_raw_bytes(o, s): return qnx6_tar.extractfile(member).read()[o: o + s]
+                def image_raw_bytes(o, s): return qnx6_image.read_file(inode, offset=o, size=s)
 
-            assert tar_raw_bytes(offset, qnx6_image.blocksize) == image_raw_bytes(offset, qnx6_image.blocksize)
-            assert tar_raw_bytes(0, offset) == image_raw_bytes(0, offset)
-            assert tar_raw_bytes(offset, qnx6_image.blocksize - offset) == image_raw_bytes(offset, qnx6_image.blocksize - offset)
-            assert tar_raw_bytes(offset, offset) == image_raw_bytes(offset, offset)
+                assert tar_raw_bytes(offset, qnx6_image.blocksize) == image_raw_bytes(offset, qnx6_image.blocksize)
+                assert tar_raw_bytes(0, offset) == image_raw_bytes(0, offset)
+                assert tar_raw_bytes(offset, qnx6_image.blocksize - offset) == image_raw_bytes(offset, qnx6_image.blocksize - offset)
+                assert tar_raw_bytes(offset, offset) == image_raw_bytes(offset, offset)
 
