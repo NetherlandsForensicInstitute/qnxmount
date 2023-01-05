@@ -1,7 +1,6 @@
 from pathlib import Path
 from qnxmount.qnx6.parser import Parser
 from kaitaistruct import KaitaiStream, BytesIO
-import mmap
 import stat
 import crcmod
 from functools import lru_cache
@@ -12,28 +11,17 @@ class QNX6FS:
     structures in the class :class:`Parser`.
 
     Args:
-        path (Path): Path to the image containing the qnx6 file system.
-        offset (int): Start of the qnx6 file system in the image.
+        stream: Kaitaistream containing the qnx6 file system.
 
     Attributes:
-        path (Path): Path to the image containing the qnx6 file system.
-        offset (int): Start of the qnx6 file system in the image.
-        f (IO): Text IO of the qnx6 file system.
-        mm (mmap): Memory map of the qnx6 file system.
         stream (KaitaiStream): Kaitai data stream of qnx6 file system.
         parser (Parser): Parser class automatically generated from .ksy file.
         blocksize (int): Block size.
         active_superblock (Parser.Superblock): Active superblock.
     """
-    def __init__(self, path, offset=0):
+    def __init__(self, stream):
 
-        self.path = path
-        self.offset = offset
-
-        self.f = open(self.path, 'r')
-        self.mm = mmap.mmap(self.f.fileno(), length=0, access=mmap.ACCESS_READ, offset=offset)
-        self.stream = KaitaiStream(self.mm)
-
+        self.stream = stream
         self.parser = Parser(self.stream)
         self.check_superblock_crc()
 
@@ -42,11 +30,6 @@ class QNX6FS:
             self.active_superblock = self.parser.qnx6_bootblock.superblock0
         else:
             self.active_superblock = self.parser.qnx6_bootblock.superblock1
-
-    def __del__(self):
-        self.stream.close()
-        self.mm.close()
-        self.f.close()
 
     def get_dir_from_path(self, path):
         """Get directory content from its path.

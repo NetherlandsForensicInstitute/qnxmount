@@ -6,6 +6,7 @@ from pathlib import Path, PurePath
 from fuse import FUSE, FuseOSError, Operations
 
 from qnxmount.qnx6.interface import QNX6FS
+from qnxmount.stream import Stream
 
 LOGGER = logging.getLogger(__name__)
 
@@ -14,19 +15,18 @@ class FuseQNX6(Operations):
     """Fuse implementation of the qnx6 file system.
 
     Args:
-        image (Path): Path to the image containing the qnx6 file system.
-        offset (int): Start of the qnx6 file system in the image.
+        stream: Kaitaistream containing the qnx6 file system.
     """
 
-    def __init__(self, image, offset):
-        self.qnx6fs = QNX6FS(image, offset)
+    def __init__(self, stream):
+        self.qnx6fs = QNX6FS(stream)
 
     def getattr(self, path, fh=None):
         """Get directory with inode information.
 
         Args:
-            path (PurePath): Path to inode
-            fh:
+            path (PurePath): Path to inode.
+            fh: file handle.
 
         Returns:
             dict: dictionary with keys identical to the stat C structure of stat(2).
@@ -110,5 +110,6 @@ class FuseQNX6(Operations):
 
 
 def mount(image, mount_point, offset):
-    qnx6 = FuseQNX6(image, offset)
-    FUSE(qnx6, str(mount_point), nothreads=True, foreground=True)
+    with Stream(image, offset) as stream:
+        qnx6 = FuseQNX6(stream)
+        FUSE(qnx6, str(mount_point), nothreads=True, foreground=True)
