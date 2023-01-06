@@ -1,7 +1,7 @@
 import errno
 import logging
 import stat
-from pathlib import Path, PurePath
+from pathlib import PurePath
 
 from fuse import FUSE, FuseOSError, Operations
 

@@ -1,4 +1,3 @@
-from pathlib import Path
 from qnxmount.qnx6.parser import Parser
 from kaitaistruct import KaitaiStream, BytesIO
 import stat

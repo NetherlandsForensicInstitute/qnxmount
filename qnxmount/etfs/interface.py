@@ -1,9 +1,7 @@
 from pathlib import Path
 from qnxmount.etfs.parser import Parser
-from kaitaistruct import KaitaiStream
 from functools import lru_cache
 from collections import defaultdict
-import mmap
 import logging
 
 LOGGER = logging.getLogger(__name__)
