@@ -1,4 +1,4 @@
-from kaitaistruct import KaitaiStream, BytesIO
+from kaitaistruct import KaitaiStream
 import mmap
 
 class Stream:
@@ -7,7 +7,7 @@ class Stream:
         self.offset = offset
 
     def __enter__(self):
-        self.f = open(self.path, 'r')
+        self.f = open(self.path, 'rb')
         self.mm = mmap.mmap(self.f.fileno(), length=0, access=mmap.ACCESS_READ, offset=self.offset)
         self.stream = KaitaiStream(self.mm)
         return self.stream
