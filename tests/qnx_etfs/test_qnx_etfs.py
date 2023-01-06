@@ -1,18 +1,23 @@
 from pathlib import Path
 from stat import S_ISDIR, S_ISLNK, S_ISREG, S_ISFIFO, S_ISCHR, S_ISBLK
+from qnxmount.stream import Stream
+from qnxmount.etfs.interface import ETFS
+import tarfile
 
 
-def test_compare_parsing_of_image_with_tar(etfs_image, etfs_tar):
-    for member in etfs_tar.getmembers():
-        path = Path(member.name)
-        if not path.is_absolute():
-            path = Path('/') / path
-        fid = etfs_image.path_to_fid[path]
-        dir_entry = etfs_image.ftable[fid]
+def test_compare_parsing_of_image_with_tar(image_path, tar_path):
+    with Stream(image_path) as stream, tarfile.open(tar_path) as etfs_tar:
+        etfs_image = ETFS(stream, 1024)
+        for member in etfs_tar.getmembers():
+            path = Path(member.name)
+            if not path.is_absolute():
+                path = Path('/') / path
+            fid = etfs_image.path_to_fid[path]
+            dir_entry = etfs_image.ftable[fid]
 
-        assert_attributes_equal(member, dir_entry)
-        if member.isreg():  # for regular files check if contents equal
-            assert etfs_tar.extractfile(member).read() == etfs_image.read_file(fid)[:dir_entry.body.size]
+            assert_attributes_equal(member, dir_entry)
+            if member.isreg():  # for regular files check if contents equal
+                assert etfs_tar.extractfile(member).read() == etfs_image.read_file(fid)[:dir_entry.body.size]
 
 
 def assert_attributes_equal(tar_entry, image_entry):
