@@ -1,30 +1,20 @@
-[project]
+[tool.poetry]
 name = "qnxmount"
 description = "read only mounters for qnx filesystems"
-version = "0.1.2"
+version = "0.1.3"
 readme = "README.md"
-requires-python = ">=3.6"
-authors = [
-    { name = "Anda Knol", email = "a.knol@nfi.nl" },
-    { name = "Francis Hoogendijk", email = "f.hoogendijk@nfi.nl" }
-]
-
-dependencies = [
-    "crcmod==1.7",
-    "fusepy==3.0.1",
-    "kaitaistruct==0.10"
-]
-
-[project.optional-dependencies]
-test = [
-  "pytest==7.1.2"
-]
-
-[project.urls]
-homepage = "https://github.com/NetherlandsForensicInstitute/qnxmount"
-documentation = "https://github.com/NetherlandsForensicInstitute/qnxmount"
+license = "Apache-2.0"
+authors = ["Francis Hoogendijk <f.hoogendijk@nfi.nl>", "Anda Knol <a.knol@nfi.nl>"]
 repository = "https://github.com/NetherlandsForensicInstitute/qnxmount"
 
+[tool.poetry.dependencies]
+crcmod = "^1.7"
+fusepy = "^3.0.1"
+kaitaistruct = "^0.10"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.1.2"
+
 [build-system]
-build-backend = "setuptools.build_meta"
-requires = ["setuptools", "setuptools-scm"]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
