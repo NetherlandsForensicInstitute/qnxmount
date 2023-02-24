@@ -8,6 +8,7 @@ authors = ["Francis Hoogendijk <f.hoogendijk@nfi.nl>", "Anda Knol <a.knol@nfi.nl
 repository = "https://github.com/NetherlandsForensicInstitute/qnxmount"
 
 [tool.poetry.dependencies]
+python = "^3.7"
 crcmod = "^1.7"
 fusepy = "^3.0.1"
 kaitaistruct = "^0.10"
