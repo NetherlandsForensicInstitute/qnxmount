@@ -1,8 +1,10 @@
-from qnxmount.qnx6.parser import Parser
-from kaitaistruct import KaitaiStream, BytesIO
 import stat
-import crcmod
 from functools import lru_cache
+
+import crcmod
+from kaitaistruct import BytesIO, KaitaiStream
+
+from qnxmount.qnx6.parser import Parser
 
 
 class QNX6FS:
@@ -18,8 +20,8 @@ class QNX6FS:
         blocksize (int): Block size.
         active_superblock (Parser.Superblock): Active superblock.
     """
-    def __init__(self, stream):
 
+    def __init__(self, stream):
         self.stream = stream
         self.parser = Parser(self.stream)
         self.check_superblock_crc()
@@ -72,8 +74,7 @@ class QNX6FS:
         Returns:
             Parser.Longname: Longname object.
         """
-        longname_raw = self.read_file(self.active_superblock.longfile,
-                                      offset=index * self.parser.blocksize, size=self.parser.blocksize)
+        longname_raw = self.read_file(self.active_superblock.longfile, offset=index * self.parser.blocksize, size=self.parser.blocksize)
         longname = self.parser.Longname(KaitaiStream(BytesIO(longname_raw)), _root=self.parser._root)
         return longname
 
@@ -86,7 +87,7 @@ class QNX6FS:
         Returns:
             Parser.Directory: Parsed directory.
         """
-        assert inode_number >= 1, 'Inode number smaller than 1 not allowed!'
+        assert inode_number >= 1, "Inode number smaller than 1 not allowed!"
         dir_raw = self.read_dir(inode_number)
         directory = self.parser.Directory(KaitaiStream(BytesIO(dir_raw)), _root=self.parser._root)
         directory.entries = directory.entries[:-1]
@@ -113,9 +114,9 @@ class QNX6FS:
         Returns:
             bytes: Raw directory content.
         """
-        assert inode_number >= 1, 'Inode number smaller than 1 not allowed!'
+        assert inode_number >= 1, "Inode number smaller than 1 not allowed!"
         dir_inode = self.get_inode(inode_number)
-        assert stat.S_ISDIR(dir_inode.mode), 'Inode is not a directory!'
+        assert stat.S_ISDIR(dir_inode.mode), "Inode is not a directory!"
         dir_raw = self.read_file(dir_inode)
 
         return dir_raw
@@ -130,10 +131,11 @@ class QNX6FS:
             Parser.Inode: Parsed inode.
         """
         # inode_number 1 is the root ("/") directory
-        assert inode_number >= 1, 'Inode number smaller than 1 not allowed!'
+        assert inode_number >= 1, "Inode number smaller than 1 not allowed!"
 
-        inode_raw = self.read_file(self.active_superblock.inodes,
-                                   offset=(inode_number - 1)*self.parser.sizeof_inode, size=self.parser.sizeof_inode)
+        inode_raw = self.read_file(
+            self.active_superblock.inodes, offset=(inode_number - 1) * self.parser.sizeof_inode, size=self.parser.sizeof_inode
+        )
 
         return self.parser.Inode(KaitaiStream(BytesIO(inode_raw)), _root=self.parser._root)
 
@@ -154,11 +156,13 @@ class QNX6FS:
             size = inode.size - offset
         # assert (offset <= inode.size and size <= inode.size - offset), 'Attempting to read beyond file size!'
 
-        file_content = b''
-        for o in range(offset, offset + size, self.blocksize):
+        file_content = b""
+        o = offset
+        while (len(file_content) - offset % self.blocksize) < size:
             file_content += self.parse_block_pointer(inode, o).raw_body
+            o += self.blocksize
 
-        return file_content[offset % self.blocksize:offset % self.blocksize + size]
+        return file_content[offset % self.blocksize : offset % self.blocksize + size]
 
     def parse_block_pointer(self, inode, offset):
         """Get pointer to the data of the inode on the given offset.
@@ -175,7 +179,10 @@ class QNX6FS:
         Returns:
             Parser.BlockPointer: Pointer to the data block at the given offset.
         """
-        def bytes_in_unit(level): return self.blocksize * (self.blocksize // 4) ** (inode.level - level)
+
+        def bytes_in_unit(level):
+            return self.blocksize * (self.blocksize // 4) ** (inode.level - level)
+
         idx = offset // bytes_in_unit(0)
         pointer = inode.pointers[idx]
 
@@ -188,14 +195,11 @@ class QNX6FS:
 
     def check_superblock_crc(self):
         """Assert superblock integrity."""
-        superblock0 = {"raw": self.parser.qnx6_bootblock.superblock0_raw,
-                       "object": self.parser.qnx6_bootblock.superblock0}
-        superblock1 = {"raw": self.parser.qnx6_bootblock.superblock1_raw,
-                       "object": self.parser.qnx6_bootblock.superblock1}
+        superblock0 = {"raw": self.parser.qnx6_bootblock.superblock0_raw, "object": self.parser.qnx6_bootblock.superblock0}
+        superblock1 = {"raw": self.parser.qnx6_bootblock.superblock1_raw, "object": self.parser.qnx6_bootblock.superblock1}
 
-        crc32_func = crcmod.mkCrcFun(0x104c11db7, initCrc=0, rev=False)
+        crc32_func = crcmod.mkCrcFun(0x104C11DB7, initCrc=0, rev=False)
 
         for superblock in [superblock0, superblock1]:
             assert len(superblock["raw"]) == 512, "Incorrect superblock size!"
             assert superblock["object"].crc == crc32_func(superblock["raw"][8:]), "Incorrect superblock CRC!"
-
