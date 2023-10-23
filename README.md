@@ -42,7 +42,7 @@ The options are different for each filesystem type. An overview is given below. 
 ```shell
 python3 -m qnxmount qnx6 [-o OFFSET] /image /mountpoint
 python3 -m qnxmount etfs [-o OFFSET] [-s PAGE_SIZE] /image /mountpoint
-python3 -m efs /image /mountpoint
+python3 -m qnxmount efs /image /mountpoint
 ```
 
 Note that the offset and page size can be entered in decimal, octal, binary, or hexadecimal format. For example, we can mount an image with a qnx6 filesystem at offset 0x1000 with:
