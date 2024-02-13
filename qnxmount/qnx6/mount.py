@@ -1,3 +1,4 @@
+import os
 import errno
 import logging
 import stat
@@ -20,6 +21,20 @@ class FuseQNX6(Operations):
 
     def __init__(self, stream):
         self.qnx6fs = QNX6FS(stream)
+
+    def open(self, path, flags):
+        """Get file handle to path
+
+        Args:
+            path (PurePath): Path to inode.
+            flags: open flags.
+
+        Returns:
+            fh: file handle.
+        """
+        if flags & os.O_RDWR:
+            raise FuseOSError(errno.EROFS)
+        return super().open(path, flags)
 
     def getattr(self, path, fh=None):
         """Get directory with inode information.
