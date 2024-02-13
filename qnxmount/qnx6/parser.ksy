@@ -157,8 +157,7 @@ types:
     seq:
       - id: entries
         type: dir_entry
-        repeat: until
-        repeat-until: '(_.inode_number == 0) and (_.length == 0)'
+        repeat: eos
 
   dir_entry:
     seq:

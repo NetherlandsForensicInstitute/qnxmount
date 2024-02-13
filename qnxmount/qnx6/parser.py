@@ -278,12 +278,10 @@ class Parser(KaitaiStruct):
         def _read(self):
             self.entries = []
             i = 0
-            while True:
-                _ = Parser.DirEntry(self._io, self, self._root)
-                self.entries.append(_)
-                if  ((_.inode_number == 0) and (_.length == 0)) :
-                    break
+            while not self._io.is_eof():
+                self.entries.append(Parser.DirEntry(self._io, self, self._root))
                 i += 1
+
 
 
     @property
