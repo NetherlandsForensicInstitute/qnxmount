@@ -1,5 +1,6 @@
 import stat
 from functools import lru_cache
+from pathlib import Path
 
 import crcmod
 from kaitaistruct import BytesIO, KaitaiStream
@@ -22,6 +23,7 @@ class QNX6FS:
     """
 
     def __init__(self, stream):
+        self.cache = dict()
         self.stream = stream
         self.parser = Parser(self.stream)
         self.check_superblock_crc()
@@ -31,6 +33,9 @@ class QNX6FS:
             self.active_superblock = self.parser.qnx6_bootblock.superblock0
         else:
             self.active_superblock = self.parser.qnx6_bootblock.superblock1
+
+    def add_to_cache(self, path: Path, inode_number: int) -> None:
+        self.cache[path] = inode_number
 
     def get_dir_from_path(self, path):
         """Get directory content from its path.
@@ -56,11 +61,14 @@ class QNX6FS:
         """
         if not path.name:
             return 1
+        if path in self.cache:
+            return self.cache[path]
 
         inode_number = self.get_inode_number_from_path(path.parent)
         directory = self.get_dir(inode_number)
         for entry in directory.entries:
             if entry.content.name == path.name:
+                self.add_to_cache(path, entry.inode_numberj)
                 return entry.inode_number
 
         return None

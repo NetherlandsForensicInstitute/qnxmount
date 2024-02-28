@@ -31,11 +31,17 @@ if __name__ == "__main__":
     main_parser = ArgumentParser(prog="qnxmount")
     subparsers = main_parser.add_subparsers(title="file system types", required=True, dest="type")
     parser_qnx6 = subparsers.add_parser("qnx6", parents=[parent_parser], help="Parser for HDD/eMMC images")
-    parser_qnx6.add_argument("-o", "--offset", type=lambda x: int(x, 0), help="Offset of qnx partition in image", default=0)
+    parser_qnx6.add_argument(
+        "-o", "--offset", type=lambda x: int(x, 0), help="Offset of qnx partition in image", default=0
+    )
     parser_efs = subparsers.add_parser("efs", parents=[parent_parser], help="Parser for NOR flash images")
     parser_etfs = subparsers.add_parser("etfs", parents=[parent_parser], help="Parser for NAND flash images")
-    parser_etfs.add_argument("-o", "--offset", type=lambda x: int(x, 0), help="Offset of qnx partition in image", default=0)
-    parser_etfs.add_argument("-s", "--page_size", type=lambda x: int(x, 0), help="Size of pages (clusters)", default=2048)
+    parser_etfs.add_argument(
+        "-o", "--offset", type=lambda x: int(x, 0), help="Offset of qnx partition in image", default=0
+    )
+    parser_etfs.add_argument(
+        "-s", "--page_size", type=lambda x: int(x, 0), help="Size of pages (clusters)", default=2048
+    )
 
     args = main_parser.parse_args()
 

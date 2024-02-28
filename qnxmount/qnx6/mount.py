@@ -77,7 +77,10 @@ class FuseQNX6(Operations):
         path = PurePath(path)
         directory = self.qnx6fs.get_dir_from_path(path)
         for entry in directory.entries:
-            yield entry.content.name
+            # Here we already have access to inode numbers, we should put them in the cache so subsequent getattrs will be MUCH faster
+            name = entry.content.name
+            self.qnx6fs.add_to_cache(path / name, entry.inode_number)
+            yield name
 
     def read(self, path, size, offset, fh):
         """Read content from an inode.
