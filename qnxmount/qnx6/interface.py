@@ -68,7 +68,7 @@ class QNX6FS:
         directory = self.get_dir(inode_number)
         for entry in directory.entries:
             if entry.content.name == path.name:
-                self.add_to_cache(path, entry.inode_numberj)
+                self.add_to_cache(path, entry.inode_number)
                 return entry.inode_number
 
         return None
