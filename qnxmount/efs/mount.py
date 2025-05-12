@@ -1,9 +1,7 @@
 import errno
 import logging
 import os
-from collections import defaultdict
 from pathlib import Path
-from typing import Dict
 
 from fuse import FUSE, FuseOSError, Operations
 
@@ -22,10 +20,10 @@ class FuseEFS(Operations):
             mount point path of the partitions.
     """
 
-    def __init__(self, partitions: Dict[Path, EFS], fuse_mount_point: Path):
+    def __init__(self, partitions: list[Path, EFS], fuse_mount_point: Path):
         self.partitions = partitions
         self.fuse_mount_point = fuse_mount_point
-        self.mount_point_dir_entries = self.build_dir_entry_tree()
+        self.tree = self.build_dir_entry_tree()
 
     def build_dir_entry_tree(self):
         """Build a default tree for the dummy directory entries on the hard coded mount path to a partition.
@@ -33,27 +31,58 @@ class FuseEFS(Operations):
         Returns:
             Dict[Path, set]: Dictionary with directory entries.
         """
-        tree = defaultdict(set)
-        for mount_point in self.partitions:
-            path = mount_point
-            while path.name:
-                tree[path.parent].add(path.name)
-                path = path.parent
+        tree = dict()
+        for partition in self.partitions:
+            mountpoint = Path(partition.root.name)
+            t = tree
+            for path_part in mountpoint.parts[:-1]:
+                if path_part not in t:
+                    sub_t = dict()
+                    t[path_part] = sub_t
+                else:
+                    sub_t = t[path_part]
+                t = sub_t
+            t[mountpoint.parts[-1]] = {"__parser__": partition}
         return tree
 
-    def get_partition_mount_point(self, path):
-        """Get mount point of the file system partition from a given path.
+    @staticmethod
+    def _step_layer(path_part: str, layer: list):
+        found_next_layer = False
+        for item in layer:
+            if isinstance(item, dict) and path_part in item:
+                found_next_layer = True
+                layer = item[path_part]
+                break
+        return found_next_layer, layer
 
-        Args:
-            path (Path): Path in the file system.
+    def _fake_stat(self):
+        # Just return stat of actual host mountpoint
+        st = os.lstat(self.fuse_mount_point.parent)
+        return dict(
+            (key, getattr(st, key))
+            for key in (
+                "st_atime",
+                "st_ctime",
+                "st_gid",
+                "st_mode",
+                "st_mtime",
+                "st_nlink",
+                "st_size",
+                "st_uid",
+            )
+        )
 
-        Returns:
-            Path: Mount point of the partition.
-        """
-        for mount_point in self.partitions:
-            if mount_point in path.parents or path == mount_point:
-                return mount_point
-        return None
+    def _resolve(self, path: str):
+        path = Path(path)
+        tree = self.tree
+        remaining_path = ""
+        for i, part in enumerate(path.parts):
+            if part in tree:
+                tree = tree[part]
+            else:
+                remaining_path = "/".join(path.parts[i:])
+                break
+        return remaining_path, tree
 
     def getattr(self, path, fh=None):
         """Get directory with stat information.
@@ -67,23 +96,12 @@ class FuseEFS(Operations):
         """
         LOGGER.debug(f"getattr({path})")
         path = Path(path)
-
-        """
-        Check if path is a valid prefix of a hard coded mount point.
-        If so, return dummy attributes derived from the hosts mount point.
-        """
-        if path in self.mount_point_dir_entries:
-            st = os.lstat(self.fuse_mount_point.parent)
-            return dict(
-                (key, getattr(st, key))
-                for key in ("st_atime", "st_ctime", "st_gid", "st_mode", "st_mtime", "st_nlink", "st_size", "st_uid")
-            )
-
-        partition_mount_point = self.get_partition_mount_point(path)
-        if partition_mount_point is not None:
-            path = path.relative_to(partition_mount_point)
-            partition = self.partitions[partition_mount_point]
-            dir_entry = partition.get_dir_entry_from_path(path)
+        remaining_path, tree = self._resolve(path)
+        if not remaining_path:
+            return self._fake_stat()
+        if "__parser__" in tree:
+            partition = tree["__parser__"]
+            dir_entry = partition.get_dir_entry_from_path(Path(f"/{remaining_path}"))
             if dir_entry:
                 return dict(
                     st_size=len(partition.read_file(dir_entry)),
@@ -94,7 +112,6 @@ class FuseEFS(Operations):
                     st_uid=dir_entry.stat.uid,
                     st_gid=dir_entry.stat.gid,
                 )
-
         raise FuseOSError(errno.ENOENT)
 
     def readdir(self, path, fh):
@@ -109,23 +126,18 @@ class FuseEFS(Operations):
         """
         LOGGER.debug(f"readdir({path})")
         path = Path(path)
-
-        """
-        Check if path is a valid prefix of a hard coded mount point.
-        If so, return the correct directory entries.
-        """
-        if path in self.mount_point_dir_entries:
-            for entry in self.mount_point_dir_entries[path]:
-                yield entry
-
-        else:
-            partition_mount_point = self.get_partition_mount_point(path)
-            if partition_mount_point is not None:
-                path = path.relative_to(partition_mount_point)
-                partition = self.partitions[partition_mount_point]
-                dir_entry = partition.get_dir_entry_from_path(path)
-                for entry in partition.read_dir(dir_entry):
-                    yield entry.name
+        remaining_path, tree = self._resolve(path)
+        output = set()
+        for entry, partition in tree.items():
+            if entry == "__parser__" and isinstance(partition, EFS):
+                dir_entry = partition.get_dir_entry_from_path(
+                    Path(f"/{remaining_path}")
+                )
+                for e in partition.read_dir(dir_entry):
+                    output.add(e.name)
+            elif isinstance(partition, dict) and not remaining_path:
+                output.add(entry)
+        return list(output)
 
     def read(self, path, size, offset, fh):
         """Read content from an object.
@@ -141,12 +153,13 @@ class FuseEFS(Operations):
         """
         LOGGER.debug(f"read({path}, {size}, {offset})")
         path = Path(path)
-        mountpoint = self.get_partition_mount_point(path)
-        if mountpoint is None:
+        remaining_path, tree = self._resolve(path)
+        if not "__parser__" in tree:
             return b""
-        path = path.relative_to(mountpoint)
-        partition = self.partitions[mountpoint]
-        dir_entry = partition.get_dir_entry_from_path(path)
+        partition = tree["__parser__"]
+        dir_entry = partition.get_dir_entry_from_path(Path(f"/{remaining_path}"))
+        if not dir_entry:
+            return b""
         return partition.read_file(dir_entry)[offset : offset + size]
 
     def readlink(self, path):
@@ -160,12 +173,13 @@ class FuseEFS(Operations):
         """
         LOGGER.debug(f"readlink({path})")
         path = Path(path)
-        mountpoint = self.get_partition_mount_point(path)
-        if mountpoint is None:
-            raise FuseOSError(errno.ENOENT)
-        path = path.relative_to(mountpoint)
-        partition = self.partitions[mountpoint]
-        dir_entry = partition.get_dir_entry_from_path(path)
+        remaining_path, tree = self._resolve(path)
+        if not "__parser__" in tree:
+            return b""
+        partition = tree["__parser__"]
+        dir_entry = partition.get_dir_entry_from_path(Path(f"/{remaining_path}"))
+        if not dir_entry:
+            return b""
         return partition.read_file(dir_entry).decode("utf-8")
 
 
@@ -179,13 +193,7 @@ def initialise_fuse_efs(image, mount_point):
     Returns:
         FuseEFS: FuseEFS object.
     """
-    partitions = dict()
-    for partition in scan_partitions(image):
-        mount_path = Path(partition.root.name)
-        if not mount_path.is_absolute():
-            mount_path = Path("/") / mount_path
-        partitions[mount_path] = partition
-
+    partitions = list(scan_partitions(image))
     return FuseEFS(partitions, mount_point)
 
 
