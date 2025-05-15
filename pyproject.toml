@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "qnxmount"
 description = "read only mounters for qnx filesystems"
-version = "0.1.8"
+version = "0.1.9"
 readme = "README.md"
 license = "Apache-2.0"
 authors = ["Francis Hoogendijk <f.hoogendijk@nfi.nl>", "Anda Knol <a.knol@nfi.nl>"]
