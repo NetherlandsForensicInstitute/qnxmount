@@ -42,7 +42,11 @@ class FuseEFS(Operations):
                 else:
                     sub_t = t[path_part]
                 t = sub_t
-            t[mountpoint.parts[-1]] = {"__parser__": partition}
+            if mountpoint.parts:
+                t[mountpoint.parts[-1]] = {"__parser__": partition}
+            else:
+                # No hardcoded mountpoint present in partition, use sane default
+                t['/'] = {"__parser__": partition}
         return tree
 
     @staticmethod
