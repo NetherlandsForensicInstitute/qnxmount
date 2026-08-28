@@ -22,10 +22,10 @@ class QNX6FS:
         active_superblock (Parser.Superblock): Active superblock.
     """
 
-    def __init__(self, stream):
+    def __init__(self, stream, sector_size=512):
         self.cache = dict()
         self.stream = stream
-        self.parser = Parser(self.stream)
+        self.parser = Parser(self.stream, sector_size=sector_size)
         self.check_superblock_crc()
 
         self.blocksize = self.parser.blocksize

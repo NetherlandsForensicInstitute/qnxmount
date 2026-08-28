@@ -8,10 +8,11 @@ if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 9):
     raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
 
 class Parser(KaitaiStruct):
-    def __init__(self, _io, _parent=None, _root=None):
+    def __init__(self, _io, _parent=None, _root=None, sector_size=512):
         self._io = _io
         self._parent = _parent
         self._root = _root if _root else self
+        self.sector_size = sector_size
         self._read()
 
     def _read(self):
@@ -214,7 +215,7 @@ class Parser(KaitaiStruct):
 
             io = self._root._io
             _pos = io.pos()
-            io.seek((self.sblk0 * 512))
+            io.seek((self.sblk0 * self._root.sector_size))
             self._m_superblock0 = Parser.Superblock(io, self, self._root)
             io.seek(_pos)
             return getattr(self, '_m_superblock0', None)
@@ -226,7 +227,7 @@ class Parser(KaitaiStruct):
 
             io = self._root._io
             _pos = io.pos()
-            io.seek((self.sblk1 * 512))
+            io.seek((self.sblk1 * self._root.sector_size))
             self._m_superblock1 = Parser.Superblock(io, self, self._root)
             io.seek(_pos)
             return getattr(self, '_m_superblock1', None)
@@ -238,7 +239,7 @@ class Parser(KaitaiStruct):
 
             io = self._root._io
             _pos = io.pos()
-            io.seek((self.sblk0 * 512))
+            io.seek((self.sblk0 * self._root.sector_size))
             self._m_superblock0_raw = io.read_bytes(512)
             io.seek(_pos)
             return getattr(self, '_m_superblock0_raw', None)
@@ -250,7 +251,7 @@ class Parser(KaitaiStruct):
 
             io = self._root._io
             _pos = io.pos()
-            io.seek((self.sblk1 * 512))
+            io.seek((self.sblk1 * self._root.sector_size))
             self._m_superblock1_raw = io.read_bytes(512)
             io.seek(_pos)
             return getattr(self, '_m_superblock1_raw', None)

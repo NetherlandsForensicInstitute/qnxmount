@@ -7,6 +7,9 @@ meta:
 seq:
   - id: qnx6_bootblock
     type: bootblock
+params:
+  - id: sector_size
+    type: u4
 
 types:
   bootblock:
@@ -23,19 +26,19 @@ types:
     instances:
       superblock0:
         io: _root._io
-        pos: sblk0*512
+        pos: sblk0*_root.sector_size
         type: superblock
       superblock1:
         io: _root._io
-        pos: sblk1*512
+        pos: sblk1*_root.sector_size
         type: superblock
       superblock0_raw:
         io: _root._io
-        pos: sblk0*512
+        pos: sblk0*_root.sector_size
         size: 512
       superblock1_raw:
         io: _root._io
-        pos: sblk1*512
+        pos: sblk1*_root.sector_size
         size: 512
 
   superblock:
