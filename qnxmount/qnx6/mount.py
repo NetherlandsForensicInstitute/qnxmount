@@ -19,8 +19,8 @@ class FuseQNX6(Operations):
         stream: Kaitaistream containing the qnx6 file system.
     """
 
-    def __init__(self, stream, sector_size=512):
-        self.qnx6fs = QNX6FS(stream, sector_size=sector_size)
+    def __init__(self, stream):
+        self.qnx6fs = QNX6FS(stream)
 
     def open(self, path, flags):
         """Get file handle to path
@@ -127,7 +127,7 @@ class FuseQNX6(Operations):
         raise FuseOSError(errno.ENOENT)
 
 
-def mount(image, mount_point, offset, sector_size=512):
+def mount(image, mount_point, offset):
     with Stream(image, offset) as stream:
-        qnx6 = FuseQNX6(stream, sector_size=sector_size)
+        qnx6 = FuseQNX6(stream)
         FUSE(qnx6, str(mount_point), nothreads=True, foreground=True)

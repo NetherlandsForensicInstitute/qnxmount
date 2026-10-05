@@ -15,7 +15,7 @@ def mount(args):
     LOGGER.info(f"Selected mounter type: {args.type}")
     LOGGER.info(f"Mounting image {args.image} on mount point {args.mount_point}")
     if args.type == "qnx6":
-        qnx6.mount(args.image, args.mount_point, args.offset, args.sector_size)
+        qnx6.mount(args.image, args.mount_point, args.offset)
     elif args.type == "efs":
         efs.mount(args.image, args.mount_point)
     elif args.type == "etfs":
@@ -33,13 +33,6 @@ if __name__ == "__main__":
     parser_qnx6 = subparsers.add_parser("qnx6", parents=[parent_parser], help="Parser for HDD/eMMC images")
     parser_qnx6.add_argument(
         "-o", "--offset", type=lambda x: int(x, 0), help="Offset of qnx partition in image", default=0
-    )
-    parser_qnx6.add_argument(
-        "-s",
-        "--sector_size",
-        type=lambda x: int(x, 0),
-        help="Sector size used to compute superblock locations",
-        default=512,
     )
     parser_efs = subparsers.add_parser("efs", parents=[parent_parser], help="Parser for NOR flash images")
     parser_etfs = subparsers.add_parser("etfs", parents=[parent_parser], help="Parser for NAND flash images")

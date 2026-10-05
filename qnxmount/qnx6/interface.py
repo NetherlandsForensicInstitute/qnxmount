@@ -1,11 +1,34 @@
 import stat
 from functools import lru_cache
 from pathlib import Path
+import logging
 
 import crcmod
-from kaitaistruct import BytesIO, KaitaiStream
+from kaitaistruct import BytesIO, KaitaiStream, ValidationNotEqualError
 
 from qnxmount.qnx6.parser import Parser
+
+LOGGER = logging.getLogger(__name__)
+
+def determine_sector_size(stream) -> int:
+    """
+    Determine sector size by attempting to read the superblocks.
+    If the magic is not found, try the 4k sector size for newer GPT systems.
+    """
+    valid_sector_sizes = (512, 4096)
+    for sector_size in valid_sector_sizes:
+        try:
+            p = Parser(sector_size=sector_size, _io=stream)
+            # Force parsing to possibly trigger ValidationNotEqualError
+            _ = p.qnx6_bootblock.superblock0
+            _ = p.qnx6_bootblock.superblock1
+            LOGGER.info(f'Chose {sector_size} as superblock sector size.')
+            return sector_size
+        except ValidationNotEqualError as e:
+            LOGGER.debug(f'Sector size: {sector_size} not valid')
+        finally:
+            stream.seek(0) # Rewind stream to not upset the subsequent Parser 
+    raise ValueError(f'Unable to determine sector size, tried: {valid_sector_sizes}')
 
 
 class QNX6FS:
@@ -22,10 +45,11 @@ class QNX6FS:
         active_superblock (Parser.Superblock): Active superblock.
     """
 
-    def __init__(self, stream, sector_size=512):
+    def __init__(self, stream):
         self.cache = dict()
         self.stream = stream
-        self.parser = Parser(self.stream, sector_size=sector_size)
+        sector_size = determine_sector_size(stream)
+        self.parser = Parser(sector_size=sector_size, _io=self.stream)
         self.check_superblock_crc()
 
         self.blocksize = self.parser.blocksize
