@@ -8,6 +8,8 @@ Existing tools were not able to handle the exotic configurations of some of the 
 
 The description of the binary data structure of these filesystems is done with [kaitai](https://kaitai.io/) and this description can be found in the `.ksy` files in the folders for each respective qnx filesystem ([qnx6](qnxmount/qnx6/parser.ksy), [etfs](qnxmount/etfs/parser.ksy), and [efs](qnxmount/efs/parser.ksy)). With Kaitai, a Python based parser was generated. Mounting with these parsers is based on fuse.
 
+For qnx6 filesystems, qnxmount detects whether the bootblock superblock pointers use 512-byte or 4096-byte sectors. Only these two superblock sector sizes are tried. The superblock record itself is still 512 bytes; the filesystem blocksize is read from the superblock.
+
 This project is only tested on Linux machines. 
 
 
