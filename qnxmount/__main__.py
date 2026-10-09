@@ -23,12 +23,22 @@ def mount(args):
     LOGGER.info(f"Unmounting image {args.image} from mount point {args.mount_point}")
 
 
+def convert_to_log_level(level):
+    numeric_level = getattr(logging, level.upper(), None)
+    if not isinstance(numeric_level, int):
+        raise ValueError("Invalid log level: %s" % level)
+    return numeric_level
+
+
 if __name__ == "__main__":
     parent_parser = ArgumentParser(description="The parent parser", add_help=False)
     parent_parser.add_argument("image", type=Path, help="Path to image containing qnx file system")
     parent_parser.add_argument("mount_point", type=Path, help="Path to mount point")
 
     main_parser = ArgumentParser(prog="qnxmount")
+    main_parser.add_argument(
+        "-l", "--log-level", help="Log level", default="INFO", type=convert_to_log_level
+    )
     subparsers = main_parser.add_subparsers(title="file system types", required=True, dest="type")
     parser_qnx6 = subparsers.add_parser("qnx6", parents=[parent_parser], help="Parser for HDD/eMMC images")
     parser_qnx6.add_argument(
@@ -45,7 +55,7 @@ if __name__ == "__main__":
 
     args = main_parser.parse_args()
 
-    setup_logging(LOGGER)
+    setup_logging(LOGGER, ars.log_level)
 
     if not args.image.exists():
         LOGGER.info(f"Image file {args.image} not found, exiting.")

@@ -36,9 +36,9 @@ pip install .
 
 General use of the module is as follows:
 ```shell
-python3 -m qnxmount {fs_type} [options] /image /mountpoint
+python3 -m qnxmount [-l LOG_LEVEL] {fs_type} [options] /image /mountpoint
 ```
-where `fs_type` is the filesystem type (qnx6, etfs, or efs) and options are the options for that filesystem type.
+where `LOG_LEVEL` is one of Python's `logging` package's log levels (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`), `fs_type` is the filesystem type (qnx6, etfs, or efs) and options are the options for that filesystem type.
 
 The options are different for each filesystem type. An overview is given below. For more information use the help option. 
 ```shell
